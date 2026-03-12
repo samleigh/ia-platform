@@ -13,17 +13,18 @@ const PLATFORM_OPTIONS = [
 ];
 
 const defaultData = {
-  eyebrowText: "CLIENT PORTAL",
-  clientName: "Roy Purdy",
+  eyebrowText: "iA CLIENT PORTAL",
+  clientName: "Publisher Pete",
   period: "Jan 1 - Jan 31, 2026",
 
   pdfUrl: "https://example.com/statement.pdf",
   emailButtonText: "Email Rep",
   downloadButtonText: "Download PDF",
+  csvButtonText: "Export CSV",
 
-  repName: "Sam Leigh",
+  repName: "Random Rep",
   repRole: "Managing Partner",
-  repEmail: "Sam@inArtists.co",
+  repEmail: "my@emailhere.com",
   repPhoto:
     "https://static.wixstatic.com/media/d6e6bf_84677ff6497648f48a455a306fc544fe~mv2.png",
 
@@ -374,6 +375,12 @@ function compileEmbed(data, channels, activity) {
       background: #fff;
       color: var(--ink);
       border: 1px solid var(--line);
+    }
+
+    #ia-client-dashboard .btn-csv {
+      background: #28a745;
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(40, 167, 69, 0.18);
     }
 
     #ia-client-dashboard .stats {
@@ -1160,9 +1167,7 @@ function compileEmbed(data, channels, activity) {
         <a href="${escapeHtml(data.pdfUrl)}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">${escapeHtml(
     data.downloadButtonText
   )}</a>
-        <a href="mailto:${escapeHtml(
-          data.repEmail
-        )}" class="btn btn-secondary">${escapeHtml(data.emailButtonText)}</a>
+        <button class="btn btn-csv" onclick="window.exportPortalData()">${escapeHtml(data.csvButtonText || "Export CSV")}</button>
       </div>
     </div>
 
@@ -1318,13 +1323,194 @@ function compileEmbed(data, channels, activity) {
       </div>
     </div>
   </div>
+</div>
+
+<script>
+  window.exportPortalData = function() {
+    const data = {
+      clientName: "${escapeHtml(data.clientName)}",
+      period: "${escapeHtml(data.period)}",
+      stat1Label: "${escapeHtml(data.stat1Label)}",
+      stat1Value: "${escapeHtml(data.stat1Value)}",
+      stat2Label: "${escapeHtml(data.stat2Label)}",
+      stat2Value: "${escapeHtml(data.stat2Value)}",
+      stat3Label: "${escapeHtml(data.stat3Label)}",
+      stat3Value: "${escapeHtml(data.stat3Value)}",
+      stat4Label: "${escapeHtml(data.stat4Label)}",
+      stat4Value: "${escapeHtml(data.stat4Value)}",
+      chartTitle: "${escapeHtml(data.chartTitle)}",
+      m1Label: "${escapeHtml(data.m1Label)}",
+      m1Value: "${escapeHtml(data.m1Value)}",
+      m2Label: "${escapeHtml(data.m2Label)}",
+      m2Value: "${escapeHtml(data.m2Value)}",
+      m3Label: "${escapeHtml(data.m3Label)}",
+      m3Value: "${escapeHtml(data.m3Value)}",
+      m4Label: "${escapeHtml(data.m4Label)}",
+      m4Value: "${escapeHtml(data.m4Value)}"
+    };
+    
+    const csvContent = [
+      "Client Portal Data Export",
+      \`Client: \${data.clientName}\`,
+      \`Period: \${data.period}\`,
+      \`Generated: \${new Date().toLocaleString()}\`,
+      "",
+      "=== KEY METRICS ===",
+      "Metric,Value",
+      \`\${data.stat1Label},\${data.stat1Value}\`,
+      \`\${data.stat2Label},\${data.stat2Value}\`,
+      \`\${data.stat3Label},\${data.stat3Value}\`,
+      \`\${data.stat4Label},\${data.stat4Value}\`,
+      "",
+      "=== MONTHLY REVENUE ===",
+      "Month,Revenue",
+      \`\${data.m1Label},\${data.m1Value}\`,
+      \`\${data.m2Label},\${data.m2Value}\`,
+      \`\${data.m3Label},\${data.m3Value}\`,
+      \`\${data.m4Label},\${data.m4Value}\`
+    ].join("\\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", \`\${data.clientName.replace(/[^a-zA-Z0-9]/g, "_")}_portal_data.csv\`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+</script>
 </div>`;
+}
+
+function escapeCsvValue(value) {
+  const stringValue = String(value ?? "");
+  // Escape quotes by doubling them and wrap in quotes if contains comma, quote, or newline
+  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+function downloadCsv(csvContent, filename) {
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function exportChannelsToCsv(channels, clientName, period) {
+  const headers = ["Platform", "Gross", "Net", "Audience", "Status"];
+  const rows = channels.map(channel => [
+    escapeCsvValue(channel.platform),
+    escapeCsvValue(channel.gross),
+    escapeCsvValue(channel.net),
+    escapeCsvValue(channel.audience),
+    escapeCsvValue(channel.status)
+  ]);
+  
+  const csvContent = [
+    `Channel Earnings Report - ${escapeCsvValue(clientName)}`,
+    `Period: ${escapeCsvValue(period)}`,
+    `Generated: ${new Date().toLocaleString()}`,
+    "",
+    headers.join(","),
+    ...rows.map(row => row.join(","))
+  ].join("\n");
+  
+  const filename = `${clientName.replace(/[^a-zA-Z0-9]/g, "_")}_channels_${period.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+  downloadCsv(csvContent, filename);
+}
+
+function exportActivityToCsv(activity, clientName, period) {
+  const headers = ["Number", "Title", "Meta"];
+  const rows = activity.map(item => [
+    escapeCsvValue(item.number),
+    escapeCsvValue(item.title),
+    escapeCsvValue(item.meta)
+  ]);
+  
+  const csvContent = [
+    `Recent Activity Report - ${escapeCsvValue(clientName)}`,
+    `Period: ${escapeCsvValue(period)}`,
+    `Generated: ${new Date().toLocaleString()}`,
+    "",
+    headers.join(","),
+    ...rows.map(row => row.join(","))
+  ].join("\n");
+  
+  const filename = `${clientName.replace(/[^a-zA-Z0-9]/g, "_")}_activity_${period.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+  downloadCsv(csvContent, filename);
+}
+
+function exportAllDataToCsv(data, channels, activity) {
+  const csvContent = [
+    `Complete Portal Data Export - ${escapeCsvValue(data.clientName)}`,
+    `Period: ${escapeCsvValue(data.period)}`,
+    `Generated: ${new Date().toLocaleString()}`,
+    "",
+    "=== PORTAL METRICS ===",
+    "Metric,Value",
+    `Client Name,${escapeCsvValue(data.clientName)}`,
+    `Period,${escapeCsvValue(data.period)}`,
+    `PDF URL,${escapeCsvValue(data.pdfUrl)}`,
+    "",
+    `=== TOP METRICS ===`,
+    `${escapeCsvValue(data.stat1Label)},${escapeCsvValue(data.stat1Prefix + data.stat1Value + data.stat1Suffix)}`,
+    `${escapeCsvValue(data.stat2Label)},${escapeCsvValue(data.stat2Prefix + data.stat2Value + data.stat2Suffix)}`,
+    `${escapeCsvValue(data.stat3Label)},${escapeCsvValue(data.stat3Prefix + data.stat3Value + data.stat3Suffix)}`,
+    `${escapeCsvValue(data.stat4Label)},${escapeCsvValue(data.stat4Prefix + data.stat4Value + data.stat4Suffix)}`,
+    "",
+    "=== CHANNEL EARNINGS ===",
+    "Platform,Gross,Net,Audience,Status",
+    ...channels.map(channel => [
+      escapeCsvValue(channel.platform),
+      escapeCsvValue(channel.gross),
+      escapeCsvValue(channel.net),
+      escapeCsvValue(channel.audience),
+      escapeCsvValue(channel.status)
+    ].join(",")),
+    "",
+    "=== RECENT ACTIVITY ===",
+    "Number,Title,Meta",
+    ...activity.map(item => [
+      escapeCsvValue(item.number),
+      escapeCsvValue(item.title),
+      escapeCsvValue(item.meta)
+    ].join(",")),
+    "",
+    "=== REPRESENTATIVE INFO ===",
+    "Field,Value",
+    `Name,${escapeCsvValue(data.repName)}`,
+    `Role,${escapeCsvValue(data.repRole)}`,
+    `Email,${escapeCsvValue(data.repEmail)}`,
+    `Participation %,${escapeCsvValue(data.participationPercent)}`
+  ].join("\n");
+  
+  const filename = `${data.clientName.replace(/[^a-zA-Z0-9]/g, "_")}_complete_export_${new Date().toISOString().split('T')[0]}.csv`;
+  downloadCsv(csvContent, filename);
 }
 
 function Field({ label, value, onChange, type = "text" }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11, color: "#93a0ba", fontWeight: 700, marginBottom: 6 }}>{label}</div>
+    <div style={{ marginBottom: 14, display: "flex", flexDirection: "column" }}>
+      <div style={{ 
+        fontSize: 11, 
+        color: "#93a0ba", 
+        fontWeight: 700, 
+        marginBottom: 6,
+        minHeight: 16,
+        display: "flex",
+        alignItems: "center"
+      }}>{label}</div>
       <input
         type={type}
         value={value}
@@ -1336,7 +1522,11 @@ function Field({ label, value, onChange, type = "text" }) {
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 12,
           padding: "12px 14px",
-          outline: "none"
+          outline: "none",
+          fontSize: 13,
+          lineHeight: 1.4,
+          boxSizing: "border-box",
+          minHeight: 44
         }}
       />
     </div>
@@ -1421,9 +1611,9 @@ export default function InArtistsMasterHub() {
     >
       <aside style={{ padding: 24, borderRight: "1px solid rgba(255,255,255,0.08)", background: "#090d16" }}>
         <div style={{ color: "#8b5cf6", fontSize: 12, fontWeight: 900, letterSpacing: "0.18em", marginBottom: 10 }}>
-          INARTISTS HUB
+          Powered by iA
         </div>
-        <div style={{ fontSize: 34, fontWeight: 900, marginBottom: 18 }}>Code Compiler</div>
+        <div style={{ fontSize: 34, fontWeight: 900, marginBottom: 18 }}>inArtists.co</div>
         <div
           style={{
             background: "linear-gradient(135deg,#8b5cf6,#6d5dfc)",
@@ -1432,29 +1622,58 @@ export default function InArtistsMasterHub() {
             fontWeight: 800
           }}
         >
-          Embed Generator
+          Pay Portal Generator
         </div>
         <div style={{ marginTop: 18, color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>
-          Accounting changes every variable here. The portal preview and Wix embed code update instantly.
+          Manage inputs here. The portal preview and embed code update instantly.
+        </div>
+        
+        <div style={{ marginTop: 24 }}>
+          <button
+            onClick={() => exportAllDataToCsv(data, channels, activity)}
+            style={{
+              width: "100%",
+              border: "1px solid #10b981",
+              background: "transparent",
+              color: "#10b981",
+              borderRadius: 12,
+              padding: "12px 14px",
+              fontWeight: 800,
+              cursor: "pointer",
+              fontSize: 12,
+              transition: "all 0.2s ease"
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = "#10b981";
+              e.target.style.color = "#090d16";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#10b981";
+            }}
+          >
+            Export All Data (CSV)
+          </button>
         </div>
       </aside>
 
       <main style={{ padding: 24, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
-        <h1 style={{ marginTop: 0, fontSize: 42, marginBottom: 18 }}>Statement Data Entry</h1>
+        <h1 style={{ marginTop: 0, fontSize: 42, marginBottom: 18 }}>Statement Data</h1>
 
         <Section title="Branding & Hero">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
             <Field label="Eyebrow Text" value={data.eyebrowText} onChange={(v) => update("eyebrowText", v)} />
             <Field label="Client Name" value={data.clientName} onChange={(v) => update("clientName", v)} />
             <Field label="Period" value={data.period} onChange={(v) => update("period", v)} />
             <Field label="PDF URL" value={data.pdfUrl} onChange={(v) => update("pdfUrl", v)} />
             <Field label="Download Button Text" value={data.downloadButtonText} onChange={(v) => update("downloadButtonText", v)} />
             <Field label="Email Button Text" value={data.emailButtonText} onChange={(v) => update("emailButtonText", v)} />
+            <Field label="CSV Button Text" value={data.csvButtonText || "Export CSV"} onChange={(v) => update("csvButtonText", v)} />
           </div>
         </Section>
 
         <Section title="Top Metric Cards">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
             <Field label="Card 1 Label" value={data.stat1Label} onChange={(v) => update("stat1Label", v)} />
             <Field label="Card 1 Value" value={data.stat1Value} onChange={(v) => update("stat1Value", v)} />
             <Field label="Card 1 Prefix" value={data.stat1Prefix} onChange={(v) => update("stat1Prefix", v)} />
@@ -1550,27 +1769,44 @@ export default function InArtistsMasterHub() {
         </Section>
 
        <Section title="Channel Rows">
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1.1fr 1fr 1fr 1fr 1fr auto",
-      gap: 10,
-      marginBottom: 10,
-      fontSize: 11,
-      color: "#93a0ba",
-      fontWeight: 800,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-      paddingBottom: 6
-    }}
-  >
-    <div>Platform</div>
-    <div>Gross</div>
-    <div>Net</div>
-    <div>Audience</div>
-    <div>Status</div>
-    <div></div>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1.1fr 1fr 1fr 1fr 1fr auto",
+        gap: 10,
+        fontSize: 11,
+        color: "#93a0ba",
+        fontWeight: 800,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        paddingBottom: 6
+      }}
+    >
+      <div>Platform</div>
+      <div>Gross</div>
+      <div>Net</div>
+      <div>Audience</div>
+      <div>Status</div>
+      <div></div>
+    </div>
+    <button
+      onClick={() => exportChannelsToCsv(channels, data.clientName, data.period)}
+      style={{
+        border: "1px solid #10b981",
+        background: "transparent",
+        color: "#10b981",
+        borderRadius: 10,
+        padding: "8px 12px",
+        fontSize: 11,
+        fontWeight: 700,
+        cursor: "pointer",
+        whiteSpace: "nowrap"
+      }}
+    >
+      Export CSV
+    </button>
   </div>
 
   {channels.map((row, index) => (
@@ -1627,7 +1863,7 @@ export default function InArtistsMasterHub() {
       >
         <option>CURRENT</option>
         <option>PENDING</option>
-        <option>REVIEW</option>
+        <option>IN REVIEW</option>
       </select>
 
       <button
@@ -1664,9 +1900,27 @@ export default function InArtistsMasterHub() {
 </Section>
 
         <Section title="Recent Activity Panel">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Recent Title" value={data.recentTitle} onChange={(v) => update("recentTitle", v)} />
-            <Field label="Recent Subtitle" value={data.recentSubtitle} onChange={(v) => update("recentSubtitle", v)} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Recent Title" value={data.recentTitle} onChange={(v) => update("recentTitle", v)} />
+              <Field label="Recent Subtitle" value={data.recentSubtitle} onChange={(v) => update("recentSubtitle", v)} />
+            </div>
+            <button
+              onClick={() => exportActivityToCsv(activity, data.clientName, data.period)}
+              style={{
+                border: "1px solid #10b981",
+                background: "transparent",
+                color: "#10b981",
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap"
+              }}
+            >
+              Export CSV
+            </button>
           </div>
 
           {activity.map((row, index) => (
@@ -1711,7 +1965,7 @@ export default function InArtistsMasterHub() {
               cursor: "pointer"
             }}
           >
-            + Add Activity Item
+            + Add Activity
           </button>
         </Section>
 
