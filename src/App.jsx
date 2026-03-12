@@ -1554,7 +1554,6 @@ export default function InArtistsMasterHub() {
   const [data, setData] = useState(defaultData);
   const [channels, setChannels] = useState(defaultChannels);
   const [activity, setActivity] = useState(defaultActivity);
-  const [copied, setCopied] = useState(false);
 
   const compiled = useMemo(() => compileEmbed(data, channels, activity), [data, channels, activity]);
 
@@ -1590,56 +1589,6 @@ export default function InArtistsMasterHub() {
 
   function removeActivity(index) {
     setActivity((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function copyAllCode() {
-    try {
-      console.log('Copy button clicked, attempting to copy...');
-      console.log('Compiled code length:', compiled.length);
-      
-      // Try modern clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        console.log('Using modern clipboard API');
-        await navigator.clipboard.writeText(compiled);
-        console.log('Clipboard API successful');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      } else {
-        console.log('Using fallback method');
-        // Fallback for older browsers
-        const textArea = document.createElement("textarea");
-        textArea.value = compiled;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        textArea.style.top = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          const successful = document.execCommand('copy');
-          console.log('execCommand copy successful:', successful);
-          if (successful) {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          } else {
-            throw new Error('execCommand returned false');
-          }
-        } catch (err) {
-          console.error('Failed to copy text: ', err);
-          // Show user-friendly message instead of alert
-          const message = 'Copy failed. Please select the code in the textarea and press Ctrl+C to copy manually.';
-          console.log(message);
-          // You could also show a temporary message in the UI
-        }
-        
-        document.body.removeChild(textArea);
-      }
-    } catch (err) {
-      console.error('Copy failed: ', err);
-      console.log('Error details:', err.message);
-      // Don't show alert - just log to console
-    }
   }
 
   return (
@@ -1825,7 +1774,8 @@ export default function InArtistsMasterHub() {
         letterSpacing: "0.08em",
         textTransform: "uppercase",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
-        paddingBottom: 6
+        paddingBottom: 6,
+        textAlign: "center"
       }}
     >
       <div>Platform</div>
@@ -1835,22 +1785,6 @@ export default function InArtistsMasterHub() {
       <div>Status</div>
       <div></div>
     </div>
-    <button
-      onClick={() => exportChannelsToCsv(channels, data.clientName, data.period)}
-      style={{
-        border: "1px solid #10b981",
-        background: "transparent",
-        color: "#10b981",
-        borderRadius: 10,
-        padding: "8px 12px",
-        fontSize: 11,
-        fontWeight: 700,
-        cursor: "pointer",
-        whiteSpace: "nowrap"
-      }}
-    >
-      Export CSV
-    </button>
   </div>
 
   {channels.map((row, index) => (
@@ -1944,27 +1878,9 @@ export default function InArtistsMasterHub() {
 </Section>
 
         <Section title="Recent Activity Panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Field label="Recent Title" value={data.recentTitle} onChange={(v) => update("recentTitle", v)} />
-              <Field label="Recent Subtitle" value={data.recentSubtitle} onChange={(v) => update("recentSubtitle", v)} />
-            </div>
-            <button
-              onClick={() => exportActivityToCsv(activity, data.clientName, data.period)}
-              style={{
-                border: "1px solid #10b981",
-                background: "transparent",
-                color: "#10b981",
-                borderRadius: 10,
-                padding: "8px 12px",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap"
-              }}
-            >
-              Export CSV
-            </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Recent Title" value={data.recentTitle} onChange={(v) => update("recentTitle", v)} />
+            <Field label="Recent Subtitle" value={data.recentSubtitle} onChange={(v) => update("recentSubtitle", v)} />
           </div>
 
           {activity.map((row, index) => (
@@ -2035,21 +1951,7 @@ export default function InArtistsMasterHub() {
 
       <section style={{ padding: 24, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h2 style={{ margin: 0 }}>Embed Code</h2>
-          <button
-            onClick={copyAllCode}
-            style={{
-              border: "none",
-              background: copied ? "#10b981" : "#8b5cf6",
-              color: "white",
-              borderRadius: 12,
-              padding: "12px 16px",
-              fontWeight: 800,
-              cursor: "pointer"
-            }}
-          >
-            {copied ? "Copied" : "Copy All Code"}
-          </button>
+          <h2 style={{ margin: 0 }}>Embed Code (Click to Copy)</h2>
         </div>
 
         <textarea
@@ -2072,6 +1974,29 @@ export default function InArtistsMasterHub() {
             cursor: "text"
           }}
         />
+      </section>
+      
+      <section style={{ padding: 44, borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+        <h2 style={{ margin: 0, marginBottom: 14 }}>Live Preview</h2>
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #e6e0d7",
+          borderRadius: 8,
+          padding: 8,
+          minHeight: 400
+        }}>
+          <iframe
+            srcDoc={compiled}
+            style={{
+              width: "750%",
+              height: "300%",
+              minHeight: 600,
+              border: "none",
+              borderRadius: 4
+            }}
+            title="Client Portal Preview"
+          />
+        </div>
       </section>
     </div>
   );
