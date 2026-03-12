@@ -1618,7 +1618,7 @@ export default function InArtistsMasterHub() {
           Pay Portal Generator
         </div>
         <div style={{ marginTop: 18, color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>
-          Manage inputs here. The portal preview and embed code update instantly.
+          Manage inputs here. The portal preview and embed code update instantly. Live preview panel below.
         </div>
         
         <div style={{ marginTop: 24 }}>
