@@ -1593,9 +1593,38 @@ export default function InArtistsMasterHub() {
   }
 
   async function copyAllCode() {
-    await navigator.clipboard.writeText(compiled);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(compiled);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = compiled;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+          alert('Failed to copy code. Please select and copy manually.');
+        }
+        
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Copy failed: ', err);
+      alert('Failed to copy code. Please select and copy manually.');
+    }
   }
 
   return (
@@ -1928,8 +1957,8 @@ export default function InArtistsMasterHub() {
               key={index}
               style={{
                 display: "grid",
-                gridTemplateColumns: "80px 1fr 1.4fr auto",
-                gap: 10,
+                gridTemplateColumns: "60px 1fr 1.2fr auto",
+                gap: 12,
                 marginTop: 10
               }}
             >
@@ -1970,9 +1999,7 @@ export default function InArtistsMasterHub() {
         </Section>
 
         <Section title="Informational Notice">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Notice Title" value={data.noticeTitle} onChange={(v) => update("noticeTitle", v)} />
-          </div>
+          <Field label="Notice Title" value={data.noticeTitle} onChange={(v) => update("noticeTitle", v)} />
           <textarea
             value={data.infoNotice}
             onChange={(e) => update("infoNotice", e.target.value)}
@@ -2013,6 +2040,7 @@ export default function InArtistsMasterHub() {
         <textarea
           readOnly
           value={compiled}
+          onClick={(e) => e.target.select()}
           style={{
             flex: 1,
             width: "100%",
@@ -2025,7 +2053,8 @@ export default function InArtistsMasterHub() {
             fontSize: 11,
             lineHeight: 1.6,
             resize: "none",
-            outline: "none"
+            outline: "none",
+            cursor: "text"
           }}
         />
       </section>
