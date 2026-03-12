@@ -1774,7 +1774,7 @@ export default function InArtistsMasterHub() {
       style={{
         display: "grid",
         gridTemplateColumns: "1.1fr 1fr 1fr 1fr 1fr auto",
-        gap: 10,
+        gap: 12,
         fontSize: 11,
         color: "#93a0ba",
         fontWeight: 800,
@@ -1815,7 +1815,7 @@ export default function InArtistsMasterHub() {
       style={{
         display: "grid",
         gridTemplateColumns: "1.1fr 1fr 1fr 1fr 1fr auto",
-        gap: 10,
+        gap: 12,
         marginBottom: 10
       }}
     >
@@ -2040,5 +2040,9 @@ const rowStyle = {
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: 12,
   padding: "12px 14px",
-  outline: "none"
+  outline: "none",
+  fontSize: 13,
+  lineHeight: 1.4,
+  boxSizing: "border-box",
+  minHeight: 44
 };
