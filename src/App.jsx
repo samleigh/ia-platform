@@ -1594,12 +1594,18 @@ export default function InArtistsMasterHub() {
 
   async function copyAllCode() {
     try {
+      console.log('Copy button clicked, attempting to copy...');
+      console.log('Compiled code length:', compiled.length);
+      
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
+        console.log('Using modern clipboard API');
         await navigator.clipboard.writeText(compiled);
+        console.log('Clipboard API successful');
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } else {
+        console.log('Using fallback method');
         // Fallback for older browsers
         const textArea = document.createElement("textarea");
         textArea.value = compiled;
@@ -1611,19 +1617,28 @@ export default function InArtistsMasterHub() {
         textArea.select();
         
         try {
-          document.execCommand('copy');
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
+          const successful = document.execCommand('copy');
+          console.log('execCommand copy successful:', successful);
+          if (successful) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          } else {
+            throw new Error('execCommand returned false');
+          }
         } catch (err) {
           console.error('Failed to copy text: ', err);
-          alert('Failed to copy code. Please select and copy manually.');
+          // Show user-friendly message instead of alert
+          const message = 'Copy failed. Please select the code in the textarea and press Ctrl+C to copy manually.';
+          console.log(message);
+          // You could also show a temporary message in the UI
         }
         
         document.body.removeChild(textArea);
       }
     } catch (err) {
       console.error('Copy failed: ', err);
-      alert('Failed to copy code. Please select and copy manually.');
+      console.log('Error details:', err.message);
+      // Don't show alert - just log to console
     }
   }
 
